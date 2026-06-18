@@ -7,6 +7,10 @@ import { connectDB, getDbStatus } from "./server/db.js";
 import authRoutes from "./server/routes/auth.js";
 import coachRoutes from "./server/routes/coach.js";
 
+
+const dns = require("dns");
+dns.setDefaultResultOrder("ipv4first");
+
 dotenv.config();
 
 async function startServer() {
