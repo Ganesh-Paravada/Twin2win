@@ -8,34 +8,36 @@ import { User } from "../models/User.js";
 const JWT_SECRET = process.env.JWT_SECRET || "twin2win_jwt_super_secret_key_112233";
 
 function createMailTransporter() {
-  const host = process.env.SMTP_HOST;
+  const host = process.env.SMTP_HOST || "smtp.gmail.com";
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
-  const port = Number(process.env.SMTP_PORT || 587);
+  const port = Number(process.env.SMTP_PORT || 465);
 
-  if (host && user && pass) {
+  console.log("SMTP_HOST:", host);
+  console.log("SMTP_PORT:", port);
+  console.log("SMTP_USER:", user);
+  console.log("SMTP_PASS exists:", !!pass);
+
+  if (user && pass) {
     return nodemailer.createTransport({
       host,
       port,
-      secure: port === 465,
-      requireTLS: port !== 465,
-      family: 4,
-      auth: { user, pass }
+      secure: true, // Required for port 465
+      family: 4, // Force IPv4
+      auth: {
+        user,
+        pass,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
     });
   }
 
-  return nodemailer.createTransport({
-    host: "smtp.ethereal.email",
-    port: 587,
-    secure: false,
-    family: 4,
-    auth: {
-      user: "marjory.hansen18@ethereal.email",
-      pass: "1Ue7rT6U679ZntGCHq"
-    }
-  });
+  throw new Error(
+    "SMTP configuration missing. Please set SMTP_HOST, SMTP_PORT, SMTP_USER and SMTP_PASS."
+  );
 }
-
 // Helper function to send email upon registration using nodemailer
 async function sendRegistrationEmail(email, name, sport) {
   try {
