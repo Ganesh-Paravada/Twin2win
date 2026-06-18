@@ -7,6 +7,35 @@ import { User } from "../models/User.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "twin2win_jwt_super_secret_key_112233";
 
+function createMailTransporter() {
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const port = Number(process.env.SMTP_PORT || 587);
+
+  if (host && user && pass) {
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      requireTLS: port !== 465,
+      family: 4,
+      auth: { user, pass }
+    });
+  }
+
+  return nodemailer.createTransport({
+    host: "smtp.ethereal.email",
+    port: 587,
+    secure: false,
+    family: 4,
+    auth: {
+      user: "marjory.hansen18@ethereal.email",
+      pass: "1Ue7rT6U679ZntGCHq"
+    }
+  });
+}
+
 // Helper function to send email upon registration using nodemailer
 async function sendRegistrationEmail(email, name, sport) {
   try {
@@ -15,34 +44,13 @@ async function sendRegistrationEmail(email, name, sport) {
     const pass = process.env.SMTP_PASS;
     const from = process.env.SMTP_FROM || "Twin2Win Coach <no-reply@twin2win.ai>";
 
-    let transporter;
-    
-    // If SMTP details are configured, use them
-    if (host && user && pass) {
-      transporter = nodemailer.createTransport({
-        host,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: false, // true for 465, false for other ports
-        auth: { user, pass }
-      });
-    } else {
+    const transporter = createMailTransporter();
+    if (!host || !user || !pass) {
       // Automatic visual log fallback if SMTP is absent
       console.log(`📡 SMTP NOT CONFIGURATED IN SECRETS. EMAIL CONTENTS LOGGED BELOW:`);
       console.log(`TO: ${email}`);
       console.log(`SUBJECT: Welcome to Twin2Win Athletic Twin Ecosystem! 🏆`);
       console.log(`BODY: Welcome, ${name}! Your digital athletic twin has been initialized for sport: ${sport}.`);
-      
-      // Let's create an Ethereal SMTP test transporter so that a real SMTP-like response completes
-      // It allows developers to check real mail deliveries in ethereal inbox without configuration!
-      transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-          user: "marjory.hansen18@ethereal.email", 
-          pass: "1Ue7rT6U679ZntGCHq"
-        }
-      });
     }
 
     const info = await transporter.sendMail({
@@ -166,26 +174,7 @@ router.post("/send-otp", async (req, res) => {
     const pass = process.env.SMTP_PASS;
     const from = process.env.SMTP_FROM || '"Twin2Win System Support" <no-reply@twin2win.net>';
 
-    let transporter;
-    if (host && user && pass) {
-      transporter = nodemailer.createTransport({
-        host,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: false,
-        auth: { user, pass }
-      });
-    } else {
-      // Create test ethereal transporter
-      transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-          user: "marjory.hansen18@ethereal.email", 
-          pass: "1Ue7rT6U679ZntGCHq"
-        }
-      });
-    }
+    const transporter = createMailTransporter();
 
     const actionText = action === "register" ? "registering a new sports twin" : "completing account sign-in";
     await transporter.sendMail({
@@ -527,25 +516,7 @@ router.post("/request-reset", async (req, res) => {
     const pass = process.env.SMTP_PASS;
     const from = process.env.SMTP_FROM || '"Twin2Win Account Recovery" <no-reply@twin2win.net>';
 
-    let transporter;
-    if (host && user && pass) {
-      transporter = nodemailer.createTransport({
-        host,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: false,
-        auth: { user, pass }
-      });
-    } else {
-      transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-          user: "marjory.hansen18@ethereal.email", 
-          pass: "1Ue7rT6U679ZntGCHq"
-        }
-      });
-    }
+    const transporter = createMailTransporter();
 
     await transporter.sendMail({
       from,
@@ -562,7 +533,7 @@ router.post("/request-reset", async (req, res) => {
             <p style="color: #475569; font-size: 14.5px; line-height: 1.6;">Use the verification code below to authorize a password change for your Twin2Win player profile:</p>
             
             <div style="background-color: #fff1f2; border: 1px dashed #f43f5e; border-radius: 12px; padding: 16px; margin: 24px 0; display: inline-block; min-width: 220px;">
-              <span style="font-size: 34px; font-weight: 900; letter-spacing: 6px; color: #e11d48; font-family: monospace;">\${otp}</span>
+              <span style="font-size: 34px; font-weight: 900; letter-spacing: 6px; color: #e11d48; font-family: monospace;">${otp}</span>
             </div>
             
             <p style="color: #64748b; font-size: 11.5px; margin-bottom: 0;">This code is active for <strong>5 minutes</strong>. If you did not initialize this recovery, you can ignore this email safely.</p>
@@ -627,3 +598,4 @@ router.post("/reset-password", async (req, res) => {
 });
 
 export default router;
+

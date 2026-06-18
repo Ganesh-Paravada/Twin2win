@@ -2,23 +2,20 @@ import express from "express";
 import path from "path";
 import cors from "cors";
 import dotenv from "dotenv";
+import dns from "dns";
 import { createServer as createViteServer } from "vite";
 import { connectDB, getDbStatus } from "./server/db.js";
 import authRoutes from "./server/routes/auth.js";
 import coachRoutes from "./server/routes/coach.js";
 
 
-const dns = require("dns");
 dns.setDefaultResultOrder("ipv4first");
 
 dotenv.config();
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
-
-  // Call database connection (it will fail gracefully to local fallback if offline or no MONGODB_URI)
-  await connectDB();
+  const PORT = Number(process.env.PORT || 3000);
 
   // Middleware
   app.use(cors());
@@ -75,6 +72,11 @@ async function startServer() {
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Twin2Win fullstack server running on http://0.0.0.0:${PORT}`);
+  });
+
+  // Connect after binding the HTTP port so deploy platforms do not time out during DB startup.
+  connectDB().catch((error) => {
+    console.error("MongoDB background connection error:", error.message);
   });
 }
 
